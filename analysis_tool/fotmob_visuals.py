@@ -112,85 +112,102 @@ def plot_match_shotmap(ax, match_id:int):
 
 
 
-
-
-
-def plot_match_xgflow(ax, match_id:int):
+def plot_match_xgflow(ax, match_id: int):
     response = requests.get(
         f'https://www.fotmob.com/api/matchDetails?matchId={match_id}&ccode3=USA&timezone=America%2FChicago&refresh=true&includeBuzzTab=false&acceptLanguage=en-US')
 
     data = json.loads(response.content)
-    data
-
-    team_logos = data['header']['teams']
-    team_logos = pd.DataFrame(team_logos)
-    team_logos
-
     homeTeam = data['general']['homeTeam']
     awayTeam = data['general']['awayTeam']
-    #homeTeam = pd.DataFrame(homeTeam,index=[0])
-    #awayTeam = pd.DataFrame(awayTeam,index=[0])
-
 
     shot_data = data['content']['shotmap']['shots']
     df_shot = pd.DataFrame(shot_data)
     df_shot['min'] = df_shot['min'].astype(int)
     df_shot['xG'] = df_shot['expectedGoals'].astype(float)
-    xg_flow = df_shot[['teamId', 'situation', 'eventType', 'expectedGoals', 'playerName', 'min', 'teamColor', 'isOwnGoal']]
-    xg_flow
+
+    df_shot['min'] = df_shot['min'].astype(int)
+
+    xg_flow = df_shot[
+        ['teamId', 'situation', 'eventType', 'expectedGoals', 'playerName', 'min', 'teamColor', 'isOwnGoal']]
+
+
     team_dict_name = {homeTeam['id']: homeTeam['name'], awayTeam['id']: awayTeam['name']}
     xg_flow['teamName'] = xg_flow['teamId'].map(team_dict_name)
-    xg_flow
+
     # Create a dictionary mapping team IDs to team names
     team_dict = {homeTeam['id']: 'Home', awayTeam['id']: 'Away'}
 
     xg_flow['Venue'] = xg_flow['teamId'].map(team_dict)
-    xg_flow
-    h_data = xg_flow[xg_flow['Venue'] == 'Home']
-    h_data
-    a_data = xg_flow[xg_flow['Venue'] == 'Away']
+    a_xG = [0]
+    h_xG = [0]
+    a_min = [0]
+    h_min = [0]
 
-    home_color = h_data.teamColor.iloc[0]
-    away_color = a_data.teamColor.iloc[0]
+    hteam = xg_flow[xg_flow['Venue'] == 'Home']
+    ateam = xg_flow[xg_flow['Venue'] == 'Away']
 
+    a_xG.extend(ateam['expectedGoals'])
+    a_min.extend(ateam['min'])
+
+    h_xG.extend(hteam['expectedGoals'])
+    h_min.extend(hteam['min'])
 
     def nums_cumulative_sum(nums_list):
-        return [sum(nums_list[:i + 1]) for i in range(len(nums_list))]
+        return [sum(nums_list[:i+1]) for i in range(len(nums_list))]
 
-
-    a_cumulative = nums_cumulative_sum(a_data['expectedGoals'])
-    h_cumulative = nums_cumulative_sum(h_data['expectedGoals'])
+    a_cumulative = nums_cumulative_sum(a_xG)
+    h_cumulative = nums_cumulative_sum(h_xG)
 
     #this is used to find the total xG. It just creates a new variable from the last item in the cumulative list
-    alast = round(a_cumulative[-1], 2)
-    hlast = round(h_cumulative[-1], 2)
+    alast = round(a_cumulative[-1],2)
+    hlast = round(h_cumulative[-1],2)
 
-    h_data['cum_xg']= h_cumulative
-    a_data['cum_xg'] = a_cumulative
 
-    plt.xticks([0,15,30,45,60,75,90])
+    # append 90 to a_min and h_min and the last cum_xg value to a_cumulative and h_cumulative
+    a_min.append(90)
+    h_min.append(90)
+    a_cumulative.append(alast)
+    h_cumulative.append(hlast)
 
-    plt.step(0 + h_data['min'], h_cumulative, color=home_color, linestyle='dashdot', label=homeTeam['name'])
 
-    plt.step(0 + a_data['min'], a_cumulative, color=away_color, linestyle='solid', label=awayTeam['name'])
+    ax.grid(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    # Remove ticks and labels for the X and Y axes
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+
+
+    ytick = max(h_cumulative[-1],a_cumulative[-1])
+    if ytick > 3:
+        space = 0.5
+    else:
+        space = 0.25
+
+    home_color = hteam.teamColor.iloc[0]
+    away_color = ateam.teamColor.iloc[0]
+
+    #plot the step graphs
+    ax.step(x=a_min,y=a_cumulative,color=away_color,label=ateam,linewidth=2, linestyle='dashdot', where='post')
+    ax.step(x=h_min,y=h_cumulative,color=home_color,label=hteam,linewidth=2, linestyle='solid',where='post')
+
+    ax.fill_between(a_min,a_cumulative, step='post',interpolate=True, alpha=0.5, color=away_color)
+    ax.fill_between(h_min,h_cumulative, step= 'post' , interpolate=True,alpha=0.5, color=home_color)
+
+
 
     plt.xticks([], [])
     plt.yticks([], [])
 
 
-
-    plt.axvline(45, c='#018b95')
-    #plt.xlabel('Minutes')
-    #plt.ylabel('Cumulative Expected Goals')
-    #plt.legend()
-    #plt.xlabel('Minute',fontsize=16)
-    #plt.ylabel('xG',fontsize=16)
-
     return ax
 
-#%%
 
-#%%
 
 def plot_player_shotmap(ax, match_id: int, player_name):
     response = requests.get(

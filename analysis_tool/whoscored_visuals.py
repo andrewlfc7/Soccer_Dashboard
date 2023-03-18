@@ -7,6 +7,7 @@ from mplsoccer import Pitch, VerticalPitch
 from highlight_text import fig_text
 import matplotlib.patches as mpatches
 
+from scipy.interpolate import make_interp_spline
 
 
 def compute_contested_zones(matchID, team_name, data):
@@ -1340,42 +1341,51 @@ def plot_team_touch_heatmap_full_opta(ax, match_id, team_id, data):
 
 
 
-def plot_xT_flow_chart(ax ,home_color, away_color, data):
-
-    data = data.copy()
-
-    data = data[data['xThreat'] >= 0]
-
-    #df_minute = data.groupby([pd.Grouper(key='minute'), 'teamId','Venue'])['xT'].mean().reset_index()
-
-    df_minute = data.groupby(['minute', 'Venue','teamId'])['xThreat'].mean().reset_index()
 
 
-    #df_minute['xT_rolling_avg'] = df_minute.groupby('teamId')['xThreat'].apply(lambda x: x.ewm(span=5).mean()).reset_index(0, drop=True)
+def plot_xT_flow_chart(ax, home_color, away_color, data):
 
-    df_minute['xT_rolling_avg'] = df_minute.groupby('teamId')['xThreat'].rolling(window=14, min_periods=0).mean().reset_index(0, drop=True)
+    team_names = data['team_name'].unique()
+
+    # Further manipulation based on team
+    data_list = []
+    for name in team_names:
+        if name == 'Liverpool':
+            data_list.append(
+                data.loc[data['team_name'] == name]
+                .assign(xThreat_gen=lambda x: np.where(x['xThreat_gen'] > 0, x['xThreat_gen'], -x['xThreat_gen']))
+            )
+        else:
+            data_list.append(
+                data.loc[data['team_name'] == name]
+                .assign(xThreat_gen=lambda x: np.where(x['xThreat_gen'] > 0, -x['xThreat_gen'], x['xThreat_gen']))
+            )
+
+    # Combine datasets and group by minute
+    df = (pd.concat(data_list)
+          .groupby('minute')
+          .agg({'xThreat_gen': 'sum'})
+          .reset_index()
+          )
+
+    # Interpolate data for a smoother line which goes through all plotted points
+    spline = make_interp_spline(df['minute'], df['xThreat_gen'], k=7)
+    spline_int = pd.DataFrame({'minute': np.linspace(df['minute'].min(), df['minute'].max(), 500)})
+    spline_int['xThreat_gen'] = spline(spline_int['minute'])
+    spline_int['team_name'] = np.where(spline_int['xThreat_gen'] > 0, team_names[0], team_names[1])
 
 
 
-    df_home = df_minute[df_minute['Venue'] == 'Home']
-    df_away = df_minute[df_minute['Venue'] == 'Away']
-
-
-    ax.plot(0+ df_home['minute'], df_home['xT_rolling_avg'], color=home_color,  lw = 1)
-    ax.plot(0+ df_away['minute'], -df_away['xT_rolling_avg'], color=away_color,  lw = 1)
-
-    ax.fill_between(df_home['minute'], df_home['xT_rolling_avg'], 0, where=df_home['xT_rolling_avg'] > 0, color=home_color, alpha=0.2)
-    ax.fill_between(df_away['minute'], -df_away['xT_rolling_avg'], 0, where=df_away['xT_rolling_avg'] > 0, color=away_color, alpha=0.2)
-
-    plt.axvline(45, c='#018b95',linestyle="--",ymin=0, ymax=5)
-
-
-    ax.set_xlabel('Minute')
-    ax.set_ylabel('xT')
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
+
+
+
+    # remove the top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     ax.set_xticks([])
     ax.set_yticks([])
@@ -1385,11 +1395,15 @@ def plot_xT_flow_chart(ax ,home_color, away_color, data):
     ax.set_facecolor("#201D1D")
     ax.grid(False)
 
+    # Plot and fill between lines
+    for name, color, hatch in zip(team_names, [home_color, away_color], ['////', '\\\\\\\\']):
+        ax.plot(spline_int['minute'], np.where(spline_int['team_name'] == name, spline_int['xThreat_gen'], np.nan), color=color, lw=1)
+        ax.fill_between(spline_int['minute'], spline_int['xThreat_gen'], where=spline_int['team_name'] == name, color=color, alpha=0.4, interpolate=True, edgecolor=color, hatch=hatch, lw=0)
+
+
+
 
     return ax
-
-
-
 
 def plot_team_touch_heatmap_opta_halfpitch(ax, match_id, team_id, data):
     data = data[data['is_open_play'] == True]
