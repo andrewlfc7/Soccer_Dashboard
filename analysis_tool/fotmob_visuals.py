@@ -1,4 +1,5 @@
 import json
+from matplotlib.patheffects import withStroke
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -111,7 +112,6 @@ def plot_match_shotmap(ax, match_id:int):
     return ax
 
 
-
 def plot_match_xgflow(ax, match_id: int):
     response = requests.get(
         f'https://www.fotmob.com/api/matchDetails?matchId={match_id}&ccode3=USA&timezone=America%2FChicago&refresh=true&includeBuzzTab=false&acceptLanguage=en-US')
@@ -192,14 +192,47 @@ def plot_match_xgflow(ax, match_id: int):
     home_color = hteam.teamColor.iloc[0]
     away_color = ateam.teamColor.iloc[0]
 
+
+    hteam['cum_xg'] = h_cumulative[:len(hteam.index)]
+
+    ateam['cum_xg'] = a_cumulative[:len(ateam.index)]
+
+
+
+    x1 = hteam[hteam['eventType']=='Goal']['min'].tolist()
+    y1 =hteam[hteam['eventType']=='Goal']['cum_xg'].tolist()
+
+    x2 = ateam[ateam['eventType']=='Goal']['min'].tolist()
+    y2 =ateam[ateam['eventType']=='Goal']['cum_xg'].tolist()
+
+
+
+    scatter = ax.scatter(x=x1, y=y1, zorder=3, alpha=.6, c=home_color, edgecolors= '#343a40' , s=300)
+    scatter.set_path_effects([withStroke(linewidth=8, foreground=home_color,alpha = .2)])
+
+    for x, y in zip(x1, y1):
+        text_list = ['Goal']
+        for txt in text_list:
+            ax.text(x, y, txt, ha='center', va='center', color='white', fontweight='bold', fontsize=4)
+
+
+    scatter2 = ax.scatter(x=x2, y=y2, zorder=3, alpha=.6, c=away_color, edgecolors= '#343a40' , s=300)
+    scatter2.set_path_effects([withStroke(linewidth=8, foreground=away_color, alpha = .2)])
+
+    for x, y in zip(x2, y2):
+        text_list = ['Goal']
+        for txt in text_list:
+            ax.text(x, y, txt, ha='center', va='center', color='white', fontweight='bold', fontsize=4)
+
+
     #plot the step graphs
-    ax.step(x=a_min,y=a_cumulative,color=away_color,label=ateam,linewidth=2, linestyle='dashdot', where='post')
-    ax.step(x=h_min,y=h_cumulative,color=home_color,label=hteam,linewidth=2, linestyle='solid',where='post')
+    ax.step(x=a_min,y=a_cumulative,color=away_color,label=ateam['teamName'].iloc[0],linewidth=2, linestyle='--', where='post')
+    ax.step(x=h_min,y=h_cumulative,color=home_color,label=hteam['teamName'].iloc[0],linewidth=2, linestyle='solid',where='post')
 
-    ax.fill_between(a_min,a_cumulative, step='post',interpolate=True, alpha=0.5, color=away_color)
-    ax.fill_between(h_min,h_cumulative, step= 'post' , interpolate=True,alpha=0.5, color=home_color)
+    plt.fill_between(a_min,a_cumulative, step='post',interpolate=True, alpha=0.5, color=away_color)
+    plt.fill_between(h_min,h_cumulative,step= 'post' , interpolate=True,alpha=0.5, color=home_color)
 
-
+    ax.legend(facecolor='#D1D1D1', framealpha=0.3)
 
     plt.xticks([], [])
     plt.yticks([], [])

@@ -99,11 +99,16 @@ def plot_zone_dominance(ax, match_id, team_name, homecolor, awaycolor, zonecolor
     away_team = data[data['Venue']=="Away"]
     away_team_name = away_team['team_name'].iloc[0]
 
-
-
-
-
-
+    bbox_pad = .6
+    bboxprops = {'linewidth': 0, 'pad': bbox_pad}
+    ax.legend(handles=[mpatches.Patch(facecolor=homecolor, edgecolor='k', label= 'Areas Where ' + home_team_name + '\nHad Majority Of The Touches'),mpatches.Patch(facecolor=awaycolor, edgecolor='k', label= 'Areas Where ' + away_team_name + '\nHad Majority Of The Touches'),mpatches.Patch(facecolor=zonecolor, edgecolor='k', label='Contested \nAreas')],
+              bbox_to_anchor=(0.5, -0.10),
+              loc='lower center',
+              fontsize=6,
+              labelspacing =.25,
+              columnspacing=.5,
+              framealpha=.3,
+              ncol=3)
 
     return ax
 
@@ -180,11 +185,11 @@ def plot_pass_map_with_xT(ax, teamId:int, data):
     average_locs_and_count_df = pd.merge(average_locs_and_count_df, player_xt_df, on='playerName')
 
 
-    MAX_MARKER_SIZE = 1200
+    MAX_MARKER_SIZE = 1000
     average_locs_and_count_df['marker_size'] = (average_locs_and_count_df['count']
                                                 / average_locs_and_count_df['count'].max() * MAX_MARKER_SIZE)
 
-    MAX_LINE_WIDTH = 20
+    MAX_LINE_WIDTH = 14
     pass_between['width'] = (pass_between.pass_count / pass_between.pass_count.max() *
                              MAX_LINE_WIDTH)
 
@@ -245,8 +250,13 @@ def plot_pass_map_with_xT(ax, teamId:int, data):
         ax.plot([pos_x[0] - 0.5, pos_x[-1] + 0.5], [y, y], color='black', ls='dashed', zorder=0, lw=0.8, alpha=0.85)
 
     for index, row in average_locs_and_count_df.iterrows():
-        pitch.annotate(row.playerName, xy=(row.x, row.y), c='#132743', va='center', ha='center', size=6, ax=ax)
+        pitch.annotate(row.playerName, xy=(row.x, row.y), c='#132743', va='center', ha='center', size=4, ax=ax)
 
+    ax.text(0.95, 0.08, 'Node size = Number of Passes\n'
+                        'Node Color = Player xT value\n'
+                        'Line Width = Passes between players\n'
+                        'Line Color = xT via pass',
+            color='white', fontsize=5, ha='right', va='bottom',transform=ax.transAxes)
 
 
     return ax
@@ -392,6 +402,10 @@ def plot_pass_map_minute_xT(ax, teamId:int, minute_start:int, minute_end:int, da
     for index, row in average_locs_and_count_df.iterrows():
         pitch.annotate(row.playerName, xy=(row.x, row.y), c='#132743', va='center', ha='center', size=6, ax=ax)
 
+    ax.text(.1, .025, 'Node size = Number of Passes '
+                      '\nNode Color = Player xT value'
+                      '\nLine Width = Passes between players'
+                      ' \nLine Color = xT via pass ', color='white', fontsize=8, ha='right', va='bottom')
 
 
     return ax
@@ -424,7 +438,6 @@ def plot_pitch_opta(ax):
     return ax
 
 
-# %%
 
 
 def plot_team_offensive_actions(ax, match_id, team_id, data):
@@ -1369,8 +1382,8 @@ def plot_xT_flow_chart(ax, home_color, away_color, data):
           )
 
     # Interpolate data for a smoother line which goes through all plotted points
-    spline = make_interp_spline(df['minute'], df['xThreat_gen'], k=7)
-    spline_int = pd.DataFrame({'minute': np.linspace(df['minute'].min(), df['minute'].max(), 500)})
+    spline = make_interp_spline(df['minute'], df['xThreat_gen'], k=3)
+    spline_int = pd.DataFrame({'minute': np.linspace(df['minute'].min(), df['minute'].max(), 2000)})
     spline_int['xThreat_gen'] = spline(spline_int['minute'])
     spline_int['team_name'] = np.where(spline_int['xThreat_gen'] > 0, team_names[0], team_names[1])
 
@@ -1399,8 +1412,6 @@ def plot_xT_flow_chart(ax, home_color, away_color, data):
     for name, color, hatch in zip(team_names, [home_color, away_color], ['////', '\\\\\\\\']):
         ax.plot(spline_int['minute'], np.where(spline_int['team_name'] == name, spline_int['xThreat_gen'], np.nan), color=color, lw=1)
         ax.fill_between(spline_int['minute'], spline_int['xThreat_gen'], where=spline_int['team_name'] == name, color=color, alpha=0.4, interpolate=True, edgecolor=color, hatch=hatch, lw=0)
-
-
 
 
     return ax
@@ -1711,25 +1722,15 @@ def plot_pass_map_with_xT_away(ax, teamId:int, data):
         pitch.annotate(row.playerName, xy=(row.x, row.y), c='#132743', va='center', ha='center', size=6, ax=ax)
 
 
+    ax.text(.1, .08, 'Node size = Number of Passes '
+                      '\nNode Color = Player xT value'
+                      '\nLine Width = Passes between players'
+                      ' \nLine Color = xT via pass ', color='white', fontsize=5, ha='left', va='bottom', transform=ax.transAxes)
+
 
     return ax
 
 
 
-# %%
-
-#%%
-
-#%%
-
-#%%
-
-#%%
-
-#%%
-
-#%%
-
-#%%
 
 #%%
