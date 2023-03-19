@@ -1732,5 +1732,31 @@ def plot_pass_map_with_xT_away(ax, teamId:int, data):
 
 
 
+def plot_player_hull_awayteam(player_df, ax, poly_edgecolor='#A0A0A0', poly_facecolor='#379A95', poly_alpha=0.3,
+                              scatter_edgecolor='#0C0F0A', scatter_facecolor='#3c6e71', avg_marker_size=600):
+
+
+    pitch =  Pitch(pitch_type='opta')
+    player_df['x'] = pitch.dim.right - player_df['x']
+    player_df['y'] = pitch.dim.right - player_df['y']
+    player_df['x_avg'] = pitch.dim.right - player_df['x_avg']
+    player_df['y_avg'] = pitch.dim.right - player_df['y_avg']
+
+    # Draw convex hull polygon
+    hull = pitch.convexhull(player_df.x, player_df.y)
+    poly = pitch.polygon(hull, ax=ax, edgecolor=poly_edgecolor, facecolor=poly_facecolor, alpha=poly_alpha)
+
+    # Draw scatter plot
+    scatter = pitch.scatter(player_df.x, player_df.y, ax=ax, edgecolor=scatter_edgecolor, facecolor=scatter_facecolor)
+
+    # Draw average location marker
+    pitch.scatter(player_df.x_avg, player_df.y_avg, ax=ax, edgecolor=scatter_edgecolor, facecolor=poly_facecolor,
+                  s=avg_marker_size, marker='o', alpha=.30)
+
+    # Add player initials as labels
+    for i, row in player_df.iterrows():
+        ax.text(row['x_avg'], row['y_avg'], row['initials'], fontsize=8, color='Black', ha='center', va='center')
+
+    return ax
 
 #%%
