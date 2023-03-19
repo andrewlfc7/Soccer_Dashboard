@@ -38,3 +38,8 @@ Dashboard 5
 
 ![Dash5](https://raw.githubusercontent.com/andrewlfc7/Soccer_Dashboard/main/figures/dashboard5.png)
 
+
+Dashboard 6
+
+![Dash6](https://raw.githubusercontent.com/andrewlfc7/Soccer_Dashboard/main/figures/dashboard6.png)
+
