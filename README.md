@@ -44,6 +44,11 @@ Dashboard 6
 ![Dash6](https://raw.githubusercontent.com/andrewlfc7/Soccer_Dashboard/main/figures/dashboard6.png)
 
 
+
 Dashboard 7
 
-![Dash7](https://raw.githubusercontent.com/andrewlfc7/Soccer_Dashboard/main/figures/dashboard7.png)
+![Dash7](https://raw.githubusercontent.com/andrewlfc7/Soccer_Dashboard/main/figures/dashboard8.png)
+
+Dashboard 8
+
+![Dash8](https://raw.githubusercontent.com/andrewlfc7/Soccer_Dashboard/main/figures/dashboard7.png)
